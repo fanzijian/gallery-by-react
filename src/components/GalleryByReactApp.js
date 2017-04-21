@@ -25,8 +25,29 @@ imageDatas = (function getImageURL(imageDatasArr){
 function getRangeRandom(low, high) {
 	return Math.ceil(Math.random() * (high - low) + low);
 }
-
+/*
+ *get random number between -30 ~ 30
+ */
+function get30DegRandom() {
+	return ((Math.random() > 0.5 ? '' : '-') + Math.ceil(Math.random() * 30));
+}
 var ImgFigure = React.createClass({
+
+	/*
+	 *Click the ImgFigure
+	 */
+	handleClick: function (e) {
+
+		if (this.props.arrange.isCenter) {
+			this.props.inverse();
+		} else {
+			this.props.center();
+		}
+
+		e.stopPropagation();
+		e.preventDefault();
+	},
+
 	render: function(){
 
 		var styleObj = {};
@@ -34,13 +55,33 @@ var ImgFigure = React.createClass({
 			styleObj = this.props.arrange.pos;
 		}
 
+		//if the rotation angle is not 0, then add the rotation angle
+		if (this.props.arrange.rotate) {
+			(['-moz-', '-ms-', '-webkit-', '']).forEach(function (value){
+				styleObj[value + 'transform'] = 'rotate(' + this.props.arrange.rotate + 'deg)';
+			}.bind(this));
+
+		}
+
+		if (this.props.arrange.isCenter) {
+			styleObj.zIndex = 11;
+		}
+
+		var imgFigureClassName = 'img-figure';
+			imgFigureClassName += this.props.arrange.isInverse ? ' is-inverse' : '';
+
 		return (
-			<figure className="img-figure" style={styleObj}>
+			<figure className={imgFigureClassName} style={styleObj} onClick={this.handleClick} >
 			<img src={this.props.data.imageURL}
 				alt={this.props.data.title}
 			/>
 			<figcaption>
 				<h2 className="img-title">{this.props.data.title}</h2>
+				<div className="img-back" onClick={this.handleClick}>
+					<p>
+						{this.props.data.desc}
+					</p>
+				</div>
 			</figcaption>
 			</figure>
 		);
@@ -63,6 +104,24 @@ var GalleryByReactApp = React.createClass({
 			topY: [0, 0]
 		}
 	},
+
+	/*
+	 * flip picture
+	 * @param index input index of the fliped picture
+	 * @return {Function} this is closure function, and the function is returned.
+	 */
+	inverse: function (index) {
+		return function () {
+			var imgsArrangeArr = this.state.imgsArrangeArr;
+
+			imgsArrangeArr[index].isInverse = !imgsArrangeArr[index].isInverse;
+
+			this.setState({
+				imgsArrangeArr: imgsArrangeArr
+			});
+		}.bind(this);
+	},
+
 	/*
 	 *rearrange all the picture
 	 *@param centerIndex 	chose index of the center picture;
@@ -85,8 +144,14 @@ var GalleryByReactApp = React.createClass({
 
 			imgsArrangeCenterArr = imgsArrangeArr.splice(centerIndex, 1);
 
-			//put picture of centerIndex into center
-			imgsArrangeCenterArr[0].pos = centerPos;
+			//put picture of centerIndex into center,No rotation for centerIndex picture
+			imgsArrangeCenterArr[0] = {
+				pos: centerPos,
+				rotate: 0,
+				isCenter: true
+			};
+
+
 
 			//get state of picture put on top;
 			topImgSpliceIndex = Math.ceil(Math.random() * (imgsArrangeArr.length - topImgNum));
@@ -94,9 +159,13 @@ var GalleryByReactApp = React.createClass({
 
 			//put picture on top
 			imgsArrangeTopArr.forEach(function (value, index) {
-				imgsArrangeTopArr[index].pos = {
-					top: getRangeRandom(vPosRangeTopY[0], vPosRangeTopY[1]),
-					left: getRangeRandom(vPosRangeX[0], vPosRangeX[1])
+				imgsArrangeTopArr[index] = {
+					pos: {
+						top: getRangeRandom(vPosRangeTopY[0], vPosRangeTopY[1]),
+						left: getRangeRandom(vPosRangeX[0], vPosRangeX[1])
+					},
+					rotate: get30DegRandom(),
+					isCenter: false
 				};
 			});
 
@@ -110,9 +179,13 @@ var GalleryByReactApp = React.createClass({
 					hPosRangeLORX = hPosRangeRightSecX;
 				}
 
-				imgsArrangeArr[i].pos = {
-					top: getRangeRandom(hPosRangeY[0], hPosRangeY[1]),
-					left: getRangeRandom(hPosRangeLORX[0], hPosRangeLORX[1])
+				imgsArrangeArr[i] = {
+					pos: {
+						top: getRangeRandom(hPosRangeY[0], hPosRangeY[1]),
+						left: getRangeRandom(hPosRangeLORX[0], hPosRangeLORX[1])
+					},
+					rotate: get30DegRandom(),
+					isCenter: false
 				};
 			}
 
@@ -128,6 +201,17 @@ var GalleryByReactApp = React.createClass({
 
 		},
 
+	/*
+	 * use rearrange function to center the picture
+	 * @param index the number of the picture
+	 * @return {Function}
+	 */
+	center: function (index) {
+		return function () {
+			this.rearrange(index);
+		}.bind(this);
+	},
+
 	getInitialState: function () {
 		return {
 			imgsArrangeArr: [
@@ -135,7 +219,10 @@ var GalleryByReactApp = React.createClass({
 					pos: {
 						left: 0,
 						top: 0
-					}
+					},
+					rotate: 0,	//rotate angle
+					isInverse: false,	//positive and negative side of picture
+					isCenter: false		//whether the picture is in the center
 				}*/
 			]
 		};
@@ -191,13 +278,18 @@ var GalleryByReactApp = React.createClass({
 					pos: {
 						left: 0,
 						top: 0
-					}
+					},
+					rotate: 0,
+					isInverse: false,
+					isCenter: false
 				};
 			}
 
 
-			imgFigures.push(<ImgFigure data={value} ref={'imgFigure' + index} arrange = {this.state.imgsArrangeArr[index]} />);
+			imgFigures.push(<ImgFigure data={value} ref={'imgFigure' + index}
+				arrange = {this.state.imgsArrangeArr[index]} inverse={this.inverse(index)} center={this.center(index)} />);
 		}.bind(this));
+
 		return (
 			<section className="stage" ref="stage">
 				<section className="img-sec">
