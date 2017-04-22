@@ -88,6 +88,36 @@ var ImgFigure = React.createClass({
 	}
 });
 
+var ControllerUnit = React.createClass({
+	handleClick: function(e){
+
+		if(this.props.arrange.isCenter){
+			this.props.inverse();
+		} else {
+			this.props.center();
+		}
+
+
+		e.preventDefault();
+		e.stopPropagation();
+	},
+	render: function(){
+		var controllerUnitClassName = "controller-unit";
+
+		if(this.props.arrange.isCenter) {
+			controllerUnitClassName += " is-center";
+		}
+
+		if(this.props.arrange.isInverse) {
+			controllerUnitClassName += " is-inverse";
+		}
+
+		return (
+			<span className={controllerUnitClassName} onClick={this.handleClick}></span>
+		);
+	}
+});
+
 var GalleryByReactApp = React.createClass({
 	Constant: {
 		centerPos: {		//center point of center picture;
@@ -139,7 +169,7 @@ var GalleryByReactApp = React.createClass({
 			vPosRangeX = vPosRange.x,
 
 			imgsArrangeTopArr = [],
-			topImgNum = Math.ceil(Math.random() * 2),//chose one or none picture
+			topImgNum = Math.floor(Math.random() * 2),//chose one or none picture
 			topImgSpliceIndex = 0,
 
 			imgsArrangeCenterArr = imgsArrangeArr.splice(centerIndex, 1);
@@ -288,6 +318,7 @@ var GalleryByReactApp = React.createClass({
 
 			imgFigures.push(<ImgFigure data={value} ref={'imgFigure' + index}
 				arrange = {this.state.imgsArrangeArr[index]} inverse={this.inverse(index)} center={this.center(index)} />);
+			controllerUnits.push(<ControllerUnit arrange={this.state.imgsArrangeArr[index]} inverse={this.inverse(index)} center={this.center(index)}/>);
 		}.bind(this));
 
 		return (
